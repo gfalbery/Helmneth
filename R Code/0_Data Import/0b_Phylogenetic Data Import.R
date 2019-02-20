@@ -1,6 +1,6 @@
 # 0b_Phylogenetic Data
 
-if(!file.exists("data/intermediate/HP3-ST_PDmatrix.csv")){
+if(!file.exists("Data/intermediate/HP3-ST_PDmatrix.csv")){
   
   ## 23 June 2016 - KJO
   # Phylogenetic matrix code, from  Cleaning_v41.r
@@ -62,7 +62,7 @@ if(!file.exists("data/intermediate/HP3-ST_PDmatrix.csv")){
 
 # Adding in all mammal supertree ####
 
-if(!file.exists("data/intermediate/FullSTMatrix.csv")){
+if(!file.exists("Data/intermediate/FullSTMatrix.csv")){
   
   library(geiger);library(ape);library(picante);library(dplyr)
   

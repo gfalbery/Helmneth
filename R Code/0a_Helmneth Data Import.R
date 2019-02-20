@@ -2,22 +2,29 @@
 
 remove(list = ls())
 
-library(igraph); library(magrittr); library(dplyr); library(ggplot2); require(RCurl); library(readr)
+library(igraph); library(tidyverse); require(RCurl); library(readr); library(Matrix)
 
 AssocsBase <- read_csv("Data/HelmAssocs.csv") %>% data.frame()
 HostTraits <- read_csv("Data/CLC_database_hosts.csv") %>% data.frame()
 HelminthTraits <- read_csv("Data/CLC_database_lifehistory.csv") %>% data.frame()
 
-AssocsBase <- AssocsBase
+AssocsBase <- AssocsBase %>%
   rename(Helminth = Parasite) %>%
-  mutate(AssocsBase, Helminth = as.factor(Helminth), Host = as.factor(Host))
-  
+  mutate(Helminth = as.factor(Helminth), Host = as.factor(Host)) %>%
+  mutate(Host = str_replace(Host, " ", "_"),
+         Helminth = str_replace(Helminth, " ", "_"))
+
+AssocsBase2 <- AssocsBase %>% filter(!Host == "Homo_sapiens")
+
 # Making bipartite projections ####
 
-AssocsTraits <- AssocsBase2[,1:2]
+AssocsTraits <- AssocsBase2[,c("Helminth","Host")]
 
 m <- table(AssocsTraits)
-M <- as.matrix(m)
+
+attributes(m)$class <- "matrix"
+
+M <- m %>%  as("dgCMatrix")
 
 bipgraph <- graph.incidence(M, weighted = T)
 
@@ -26,31 +33,35 @@ Hostgraph <- bipartite.projection(bipgraph)$proj2
 
 HelminthAdj <- as.matrix(get.adjacency(Helminthgraph, attr = "weight"))
 diag(HelminthAdj) <- table(AssocsBase2$Helminth)
-HelminthA <- matrix(rep(table(AssocsBase2$Helminth), nrow(HelminthAdj)), nrow(HelminthAdj))
-HelminthB <- matrix(rep(table(AssocsBase2$Helminth), each = nrow(HelminthAdj)), nrow(HelminthAdj))
-HelminthAdj2 <- HelminthAdj/(HelminthA + HelminthB - HelminthAdj)
-HelminthAdj3 <- HelminthAdj/(HelminthA) # Asymmetrical
+#HelminthA <- matrix(rep(table(AssocsBase2$Helminth), nrow(HelminthAdj)), nrow(HelminthAdj))
+#HelminthB <- matrix(rep(table(AssocsBase2$Helminth), each = nrow(HelminthAdj)), nrow(HelminthAdj))
+#HelminthAdj2 <- HelminthAdj/(HelminthA + HelminthB - HelminthAdj)
+#HelminthAdj3 <- HelminthAdj/(HelminthA) # Asymmetrical
+#remove(HelminthA, HelminthB)
 
 HostAdj <- as.matrix(get.adjacency(Hostgraph, attr = "weight"))
 diag(HostAdj) <- table(AssocsBase2$Host)
-HostA <- matrix(rep(table(AssocsBase2$Host), nrow(HostAdj)), nrow(HostAdj))
-HostB <- matrix(rep(table(AssocsBase2$Host), each = nrow(HostAdj)), nrow(HostAdj))
-HostAdj2 <- HostAdj/(HostA + HostB - HostAdj)
-HostAdj3 <- HostAdj/(HostA)
+#HostA <- matrix(rep(table(AssocsBase2$Host), nrow(HostAdj)), nrow(HostAdj))
+#HostB <- matrix(rep(table(AssocsBase2$Host), each = nrow(HostAdj)), nrow(HostAdj))
+#HostAdj2 <- HostAdj/(HostA + HostB - HostAdj)
+#HostAdj3 <- HostAdj/(HostA)
+#remove(HostA, HostB)
 
 # Deriving metrics from the networks ####
 
 Hosts <- data.frame(Sp = names(V(Hostgraph)),
                     Degree = degree(Hostgraph),
-                    Eigenvector = eigen_centrality(Hostgraph)$vector,
-                    Kcore = coreness(Hostgraph),
-                    Between = betweenness(Hostgraph))
+                    Eigenvector = eigen_centrality(Hostgraph)$vector
+                    #Kcore = coreness(Hostgraph),
+                    #Between = betweenness(Hostgraph)
+                    )
 
 Helminths <- data.frame(Sp = names(V(Helminthgraph)),
-                      Degree = degree(Helminthgraph),
-                      Eigenvector = eigen_centrality(Helminthgraph)$vector,
-                      Kcore = coreness(Helminthgraph),
-                      Between = betweenness(Helminthgraph))
+                        Degree = degree(Helminthgraph),
+                        Eigenvector = eigen_centrality(Helminthgraph)$vector
+                        #Kcore = coreness(Helminthgraph),
+                        #Between = betweenness(Helminthgraph)
+                        )
 
 Hosts <- merge(Hosts, HostTraits, by.x = "Sp", by.y = "hHostNameFinal", all.x = T)
 Helminths <- merge(Helminths, HelminthTraits, by.x = "Sp", by.y = "vHelminthNameCorrected", all.x = T)
@@ -115,9 +126,9 @@ Helminths <- Helminths %>%
 
 
 Helminths$HumDomWild <- factor(with(Helminths, 
-                                  paste(ifelse(Human,"Human",""), 
-                                        ifelse(Domestic,"Domestic",""), 
-                                        ifelse(Wildlife,"Wild",""), sep = "")))
+                                    paste(ifelse(Human,"Human",""), 
+                                          ifelse(Domestic,"Domestic",""), 
+                                          ifelse(Wildlife,"Wild",""), sep = "")))
 
 vCentrality <- c("vDegree", "vEigenvector", "vCore")
 vDists <- c("gaussian", "beta", "binomial")
@@ -155,3 +166,43 @@ AlberTheme <- theme_bw() +
 
 theme_set(AlberTheme)
 
+# Trying out subgraphs ####
+
+WormGroups <- unique(AssocsBase$group)
+
+SubWorms <- lapply(WormGroups, function(a) AssocsBase %>% filter(group == a))
+
+HelminthGraphs <- HostGraphs <- HelminthAdjList <- HostAdjList <-  list()
+
+for(w in 1:length(SubWorms)){
+  
+  m <- SubWorms[[w]] %>% select(Helminth, Host) %>% table()
+  
+  attributes(m)$class <- "matrix"
+  
+  M <- m %>%  as("dgCMatrix")
+  
+  bipgraph <- graph.incidence(M, weighted = T)
+  
+  HelminthGraphs[[w]] <- bipartite.projection(bipgraph)$proj1
+  HostGraphs[[w]] <- bipartite.projection(bipgraph)$proj2
+  
+  HelminthAdjList[[w]] <- as.matrix(get.adjacency(HelminthGraphs[[w]], attr = "weight"))
+  diag(HelminthAdjList[[w]]) <- SubWorms[[w]] %>% select(Helminth) %>% table()
+  #HelminthA <- matrix(rep(table(AssocsBase2$Helminth), nrow(HelminthAdj)), nrow(HelminthAdj))
+  #HelminthB <- matrix(rep(table(AssocsBase2$Helminth), each = nrow(HelminthAdj)), nrow(HelminthAdj))
+  #HelminthAdj2 <- HelminthAdj/(HelminthA + HelminthB - HelminthAdj)
+  #HelminthAdj3 <- HelminthAdj/(HelminthA) # Asymmetrical
+  #remove(HelminthA, HelminthB)
+  
+  HostAdjList[[w]] <- as.matrix(get.adjacency(HostGraphs[[w]], attr = "weight"))
+  diag(HostAdjList[[w]]) <- SubWorms[[w]] %>% select(Host) %>% table()
+  #HostA <- matrix(rep(table(AssocsBase2$Host), nrow(HostAdj)), nrow(HostAdj))
+  #HostB <- matrix(rep(table(AssocsBase2$Host), each = nrow(HostAdj)), nrow(HostAdj))
+  #HostAdj2 <- HostAdj/(HostA + HostB - HostAdj)
+  #HostAdj3 <- HostAdj/(HostA)
+  #remove(HostA, HostB)
+  
+}
+
+names(SubWorms) <- WormGroups
