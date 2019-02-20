@@ -1,20 +1,17 @@
-# Data import for EHA ###
+# Data import for Helmneth ###
 
-#remove(list = ls())
+remove(list = ls())
 
 library(igraph); library(magrittr); library(dplyr); library(ggplot2); require(RCurl); library(readr)
 
-AssocsBase <- read_csv("https://raw.githubusercontent.com/ecohealthalliance/HP3/master/data/associations.csv") %>% data.frame()
-HostTraits <- read_csv("https://raw.githubusercontent.com/ecohealthalliance/HP3/master/data/hosts.csv") %>% data.frame()
-VirusTraits <- read_csv("https://raw.githubusercontent.com/ecohealthalliance/HP3/master/data/viruses.csv") %>% data.frame()
+AssocsBase <- read_csv("Data/HelmAssocs.csv") %>% data.frame()
+HostTraits <- read_csv("Data/CLC_database_hosts.csv") %>% data.frame()
+HelminthTraits <- read_csv("Data/CLC_database_lifehistory.csv") %>% data.frame()
 
-names(AssocsBase)[1:2] <- c("Virus", "Host")
-AssocsBase <- mutate(AssocsBase, Virus = as.factor(Virus), Host = as.factor(Host))
-
-AssocsBase2 <- AssocsBase
-AssocsBase2 <- droplevels(AssocsBase[!AssocsBase$Host == "Homo_sapiens"&
-  !AssocsBase$Virus == "Rabies_virus",])
-
+AssocsBase <- AssocsBase
+  rename(Helminth = Parasite) %>%
+  mutate(AssocsBase, Helminth = as.factor(Helminth), Host = as.factor(Host))
+  
 # Making bipartite projections ####
 
 AssocsTraits <- AssocsBase2[,1:2]
@@ -24,15 +21,15 @@ M <- as.matrix(m)
 
 bipgraph <- graph.incidence(M, weighted = T)
 
-Virusgraph <- bipartite.projection(bipgraph)$proj1
+Helminthgraph <- bipartite.projection(bipgraph)$proj1
 Hostgraph <- bipartite.projection(bipgraph)$proj2
 
-VirusAdj <- as.matrix(get.adjacency(Virusgraph, attr = "weight"))
-diag(VirusAdj) <- table(AssocsBase2$Virus)
-VirusA <- matrix(rep(table(AssocsBase2$Virus), nrow(VirusAdj)), nrow(VirusAdj))
-VirusB <- matrix(rep(table(AssocsBase2$Virus), each = nrow(VirusAdj)), nrow(VirusAdj))
-VirusAdj2 <- VirusAdj/(VirusA + VirusB - VirusAdj)
-VirusAdj3 <- VirusAdj/(VirusA) # Asymmetrical
+HelminthAdj <- as.matrix(get.adjacency(Helminthgraph, attr = "weight"))
+diag(HelminthAdj) <- table(AssocsBase2$Helminth)
+HelminthA <- matrix(rep(table(AssocsBase2$Helminth), nrow(HelminthAdj)), nrow(HelminthAdj))
+HelminthB <- matrix(rep(table(AssocsBase2$Helminth), each = nrow(HelminthAdj)), nrow(HelminthAdj))
+HelminthAdj2 <- HelminthAdj/(HelminthA + HelminthB - HelminthAdj)
+HelminthAdj3 <- HelminthAdj/(HelminthA) # Asymmetrical
 
 HostAdj <- as.matrix(get.adjacency(Hostgraph, attr = "weight"))
 diag(HostAdj) <- table(AssocsBase2$Host)
@@ -49,62 +46,62 @@ Hosts <- data.frame(Sp = names(V(Hostgraph)),
                     Kcore = coreness(Hostgraph),
                     Between = betweenness(Hostgraph))
 
-Viruses <- data.frame(Sp = names(V(Virusgraph)),
-                      Degree = degree(Virusgraph),
-                      Eigenvector = eigen_centrality(Virusgraph)$vector,
-                      Kcore = coreness(Virusgraph),
-                      Between = betweenness(Virusgraph))
+Helminths <- data.frame(Sp = names(V(Helminthgraph)),
+                      Degree = degree(Helminthgraph),
+                      Eigenvector = eigen_centrality(Helminthgraph)$vector,
+                      Kcore = coreness(Helminthgraph),
+                      Between = betweenness(Helminthgraph))
 
 Hosts <- merge(Hosts, HostTraits, by.x = "Sp", by.y = "hHostNameFinal", all.x = T)
-Viruses <- merge(Viruses, VirusTraits, by.x = "Sp", by.y = "vVirusNameCorrected", all.x = T)
+Helminths <- merge(Helminths, HelminthTraits, by.x = "Sp", by.y = "vHelminthNameCorrected", all.x = T)
 
 Hosts <- Hosts %>% dplyr::rename(hDom = hWildDomFAO)
 
 Domestics <- Hosts[Hosts$hDom == "domestic", "Sp"]
 Wildlife <- Hosts[Hosts$hDom == "wild", "Sp"]
 
-DomesticViruses <- as.factor(AssocsBase[AssocsBase$Host %in% Domestics, "Virus"])
-WildlifeViruses <- as.factor(AssocsBase[AssocsBase$Host %in% Wildlife, "Virus"])
-HumanViruses <- as.factor(AssocsBase[AssocsBase$Host == "Homo_sapiens", "Virus"])
+DomesticHelminths <- as.factor(AssocsBase[AssocsBase$Host %in% Domestics, "Helminth"])
+WildlifeHelminths <- as.factor(AssocsBase[AssocsBase$Host %in% Wildlife, "Helminth"])
+HumanHelminths <- as.factor(AssocsBase[AssocsBase$Host == "Homo_sapiens", "Helminth"])
 
-ZoonoticViruses <- intersect(HumanViruses, WildlifeViruses)
+ZoonoticHelminths <- intersect(HumanHelminths, WildlifeHelminths)
 
 AssocsTraits <- merge(AssocsTraits, HostTraits, by.x = "Host", by.y = "hHostNameFinal", all.x = T)
-AssocsTraits <- merge(AssocsTraits, VirusTraits, by.x = "Virus", by.y = "vVirusNameCorrected", all.x = T)
+AssocsTraits <- merge(AssocsTraits, HelminthTraits, by.x = "Helminth", by.y = "vHelminthNameCorrected", all.x = T)
 
 AssocsTraits$Domestic <- ifelse(AssocsTraits$Host%in%Domestics,1,0)
 AssocsTraits$Wildlife <- ifelse(AssocsTraits$Host%in%Wildlife,1,0)
-AssocsTraits$Zoonosis <- ifelse(AssocsTraits$Virus%in%ZoonoticViruses,1,0)
+AssocsTraits$Zoonosis <- ifelse(AssocsTraits$Helminth%in%ZoonoticHelminths,1,0)
 
 Hosts <- Hosts %>% 
   mutate(
     Domestic = ifelse(Sp %in% Domestics, 1, 0),
     Wildlife = ifelse(Sp %in% Wildlife, 1, 0),
-    hZoonosisCount = c(table(AssocsTraits[AssocsTraits$Virus%in%ZoonoticViruses,"Host"])),
+    hZoonosisCount = c(table(AssocsTraits[AssocsTraits$Helminth%in%ZoonoticHelminths,"Host"])),
     Records = c(table(AssocsTraits$Host))
   ) %>%
   mutate(hZoonosisProp = hZoonosisCount/Records)
 
-Viruses <- Viruses %>%
+Helminths <- Helminths %>%
   mutate(
     Human = case_when(
-      Sp %in% HumanViruses ~ 1,
+      Sp %in% HumanHelminths ~ 1,
       TRUE ~ 0),
     
     Domestic = case_when(
-      Sp %in% DomesticViruses ~ 1,
+      Sp %in% DomesticHelminths ~ 1,
       TRUE ~ 0),
     
     Wildlife = case_when(
-      Sp %in% WildlifeViruses ~ 1,
+      Sp %in% WildlifeHelminths ~ 1,
       TRUE ~ 0),
     
-    DomesticCount = c(table(AssocsTraits[AssocsTraits$Domestic == 1,"Virus"])),
-    WildlifeCount = c(table(AssocsTraits[AssocsTraits$Wildlife == 1,"Virus"])),
-    ZoonosisCount = c(table(AssocsTraits[AssocsTraits$Zoonosis == 1,"Virus"])),
-    HumanCount = c(table(AssocsBase[AssocsBase$Host == "Homo_sapiens", "Virus"]))[as.character(Viruses$Sp)],
+    DomesticCount = c(table(AssocsTraits[AssocsTraits$Domestic == 1,"Helminth"])),
+    WildlifeCount = c(table(AssocsTraits[AssocsTraits$Wildlife == 1,"Helminth"])),
+    ZoonosisCount = c(table(AssocsTraits[AssocsTraits$Zoonosis == 1,"Helminth"])),
+    HumanCount = c(table(AssocsBase[AssocsBase$Host == "Homo_sapiens", "Helminth"]))[as.character(Helminths$Sp)],
     
-    Records = c(table(AssocsTraits$Virus))
+    Records = c(table(AssocsTraits$Helminth))
   ) %>% mutate(
     
     
@@ -117,7 +114,7 @@ Viruses <- Viruses %>%
   )
 
 
-Viruses$HumDomWild <- factor(with(Viruses, 
+Helminths$HumDomWild <- factor(with(Helminths, 
                                   paste(ifelse(Human,"Human",""), 
                                         ifelse(Domestic,"Domestic",""), 
                                         ifelse(Wildlife,"Wild",""), sep = "")))
@@ -125,15 +122,15 @@ Viruses$HumDomWild <- factor(with(Viruses,
 vCentrality <- c("vDegree", "vEigenvector", "vCore")
 vDists <- c("gaussian", "beta", "binomial")
 
-Viruses$vDegree <- kader:::cuberoot(Viruses$Degree)
-Viruses$vEigenvector <- kader:::cuberoot(Viruses$Eigenvector)
-Viruses$vCore <- ifelse(Viruses$Kcore==max(Viruses$Kcore),1,0)
+Helminths$vDegree <- kader:::cuberoot(Helminths$Degree)
+Helminths$vEigenvector <- kader:::cuberoot(Helminths$Eigenvector)
+Helminths$vCore <- ifelse(Helminths$Kcore==max(Helminths$Kcore),1,0)
 
-#Viruses$vEigenvector[round(Viruses$vEigenvector,4)==0] <- 0.0001 # Needed for a beta-distribution
-#Viruses$vEigenvector[round(Viruses$vEigenvector,4)==1] <- 0.999
+#Helminths$vEigenvector[round(Helminths$vEigenvector,4)==0] <- 0.0001 # Needed for a beta-distribution
+#Helminths$vEigenvector[round(Helminths$vEigenvector,4)==1] <- 0.999
 
-Viruses$vGenomeAveLengthLn <- log(Viruses$vGenomeAveLength)
-Viruses$vPubMedCitesLn <- log(Viruses$vPubMedCites + 1)
+Helminths$vGenomeAveLengthLn <- log(Helminths$vGenomeAveLength)
+Helminths$vPubMedCitesLn <- log(Helminths$vPubMedCites + 1)
 
 # Loading functions, determining themes ####
 
