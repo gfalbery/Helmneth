@@ -8,8 +8,9 @@ AssocsBase <- read_csv("Data/HelmAssocs.csv") %>% data.frame()
 HostTraits <- read_csv("Data/CLC_database_hosts.csv") %>% data.frame()
 HelminthTraits <- read_csv("Data/CLC_database_lifehistory.csv") %>% data.frame()
 
+names(AssocsBase)[3] <- 'Helminth'
 AssocsBase <- AssocsBase %>%
-  dplyr::rename(Helminth = Parasite) %>%
+  #dplyr::rename(Helminth = Parasite) %>%
   mutate(Helminth = as.factor(Helminth), Host = as.factor(Host)) %>%
   mutate(Host = str_replace(Host, " ", "_"),
          Helminth = str_replace(Helminth, " ", "_"))
