@@ -3,7 +3,7 @@
 library(tidyverse); library(vegan)
 
 if(file.exists("Data/FullRangeOverlap.Rdata")) load("Data/FullRangeOverlap.Rdata") else{
-  source(paste0(CodeRoot,"/","0c2_Exhaustive Spatial Data Import.R"))
+  source(paste0(CodeRoot,"/","0_Data Import/0c2_Exhaustive Spatial Data Import.R"))
 }
 
 if(!file.exists("Data/intermediate/FullSTMatrix.csv")){
