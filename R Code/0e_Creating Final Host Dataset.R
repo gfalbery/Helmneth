@@ -85,3 +85,12 @@ ggplot(SlopeTime, aes(Space, Shared, colour = Group)) +
   geom_point() + 
   geom_smooth()
 
+ggplot(SlopeTime, aes(Phylo, Shared, colour = Group)) + 
+  facet_wrap(~Group) + 
+  geom_point() + 
+  geom_smooth()
+
+ggplot(SlopeTime, aes(DietSim, Shared, colour = Group, lty = as.factor(Eaten))) + 
+  facet_wrap(~Group) + 
+  geom_point() + 
+  geom_smooth()
