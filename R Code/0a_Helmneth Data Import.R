@@ -33,19 +33,9 @@ Hostgraph <- bipartite.projection(bipgraph)$proj2
 
 HelminthAdj <- as.matrix(get.adjacency(Helminthgraph, attr = "weight"))
 diag(HelminthAdj) <- table(AssocsBase2$Helminth)
-#HelminthA <- matrix(rep(table(AssocsBase2$Helminth), nrow(HelminthAdj)), nrow(HelminthAdj))
-#HelminthB <- matrix(rep(table(AssocsBase2$Helminth), each = nrow(HelminthAdj)), nrow(HelminthAdj))
-#HelminthAdj2 <- HelminthAdj/(HelminthA + HelminthB - HelminthAdj)
-#HelminthAdj3 <- HelminthAdj/(HelminthA) # Asymmetrical
-#remove(HelminthA, HelminthB)
 
 HostAdj <- as.matrix(get.adjacency(Hostgraph, attr = "weight"))
 diag(HostAdj) <- table(AssocsBase2$Host)
-#HostA <- matrix(rep(table(AssocsBase2$Host), nrow(HostAdj)), nrow(HostAdj))
-#HostB <- matrix(rep(table(AssocsBase2$Host), each = nrow(HostAdj)), nrow(HostAdj))
-#HostAdj2 <- HostAdj/(HostA + HostB - HostAdj)
-#HostAdj3 <- HostAdj/(HostA)
-#remove(HostA, HostB)
 
 # Deriving metrics from the networks ####
 
@@ -130,19 +120,6 @@ Helminths$HumDomWild <- factor(with(Helminths,
                                           ifelse(Domestic,"Domestic",""), 
                                           ifelse(Wildlife,"Wild",""), sep = "")))
 
-vCentrality <- c("vDegree", "vEigenvector", "vCore")
-vDists <- c("gaussian", "beta", "binomial")
-
-Helminths$vDegree <- kader:::cuberoot(Helminths$Degree)
-Helminths$vEigenvector <- kader:::cuberoot(Helminths$Eigenvector)
-Helminths$vCore <- ifelse(Helminths$Kcore==max(Helminths$Kcore),1,0)
-
-#Helminths$vEigenvector[round(Helminths$vEigenvector,4)==0] <- 0.0001 # Needed for a beta-distribution
-#Helminths$vEigenvector[round(Helminths$vEigenvector,4)==1] <- 0.999
-
-Helminths$vGenomeAveLengthLn <- log(Helminths$vGenomeAveLength)
-Helminths$vPubMedCitesLn <- log(Helminths$vPubMedCites + 1)
-
 # Loading functions, determining themes ####
 
 #devtools::install_github("gfalbery/ggregplot")
@@ -189,19 +166,9 @@ for(w in 1:length(SubWorms)){
   
   HelminthAdjList[[w]] <- as.matrix(get.adjacency(HelminthGraphs[[w]], attr = "weight"))
   diag(HelminthAdjList[[w]]) <- SubWorms[[w]] %>% select(Helminth) %>% table()
-  #HelminthA <- matrix(rep(table(AssocsBase2$Helminth), nrow(HelminthAdj)), nrow(HelminthAdj))
-  #HelminthB <- matrix(rep(table(AssocsBase2$Helminth), each = nrow(HelminthAdj)), nrow(HelminthAdj))
-  #HelminthAdj2 <- HelminthAdj/(HelminthA + HelminthB - HelminthAdj)
-  #HelminthAdj3 <- HelminthAdj/(HelminthA) # Asymmetrical
-  #remove(HelminthA, HelminthB)
   
   HostAdjList[[w]] <- as.matrix(get.adjacency(HostGraphs[[w]], attr = "weight"))
   diag(HostAdjList[[w]]) <- SubWorms[[w]] %>% select(Host) %>% table()
-  #HostA <- matrix(rep(table(AssocsBase2$Host), nrow(HostAdj)), nrow(HostAdj))
-  #HostB <- matrix(rep(table(AssocsBase2$Host), each = nrow(HostAdj)), nrow(HostAdj))
-  #HostAdj2 <- HostAdj/(HostA + HostB - HostAdj)
-  #HostAdj3 <- HostAdj/(HostA)
-  #remove(HostA, HostB)
   
 }
 
