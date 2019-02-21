@@ -31,8 +31,6 @@ kt <- ktab.data.frame(Panth1[,EcoDistVars])
 
 EltonTraits$Carnivore <- ifelse(rowSums(EltonTraits[,c("Diet.Vend","Diet.Vect","Diet.Vfish")])>10,1,0)
 
-
-
 DietComp <- EltonTraits %>% select(starts_with("Diet")) %>% select(1:10) %>% as.tibble
 Remove <- which(rowSums(DietComp)==0)
 DietComp <- DietComp %>% slice(-Remove)

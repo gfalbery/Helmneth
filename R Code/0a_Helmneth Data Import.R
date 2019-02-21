@@ -1,6 +1,6 @@
 # Data import for Helmneth ###
 
-remove(list = ls())
+#remove(list = ls())
 
 library(igraph); library(tidyverse); require(RCurl); library(readr); library(Matrix)
 
