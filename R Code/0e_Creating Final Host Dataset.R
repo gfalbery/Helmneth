@@ -93,7 +93,7 @@ VD <- vegdist(DietComp) %>% as.matrix
 colnames(VD) <- rownames(VD) <- EltonTraits %>% slice(-Remove) %>% select(Scientific) %>% unlist
 
 LongDiet <- reshape2::melt(VD) %>%     
-  rename(Sp = Var1, Sp2 = Var2, DietSim = value)
+  dplyr::rename(Sp = Var1, Sp2 = Var2, DietSim = value)
 
 FinalHostMatrix <- FinalHostMatrix %>% left_join(LongDiet, by = c("Sp","Sp2")) %>%
   mutate(DietSim = 1 - DietSim)
