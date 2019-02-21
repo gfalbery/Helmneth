@@ -1,6 +1,6 @@
 # Data import for Helmneth ###
 
-#remove(list = ls())
+remove(list = ls())
 
 library(igraph); library(tidyverse); require(RCurl); library(readr); library(Matrix)
 
@@ -9,7 +9,7 @@ HostTraits <- read_csv("Data/CLC_database_hosts.csv") %>% data.frame()
 HelminthTraits <- read_csv("Data/CLC_database_lifehistory.csv") %>% data.frame()
 
 AssocsBase <- AssocsBase %>%
-  rename(Helminth = Parasite) %>%
+  dplyr::rename(Helminth = Parasite) %>%
   mutate(Helminth = as.factor(Helminth), Host = as.factor(Host)) %>%
   mutate(Host = str_replace(Host, " ", "_"),
          Helminth = str_replace(Helminth, " ", "_"))
@@ -52,73 +52,6 @@ Helminths <- data.frame(Sp = names(V(Helminthgraph)),
                         #Kcore = coreness(Helminthgraph),
                         #Between = betweenness(Helminthgraph)
                         )
-
-Hosts <- merge(Hosts, HostTraits, by.x = "Sp", by.y = "hHostNameFinal", all.x = T)
-Helminths <- merge(Helminths, HelminthTraits, by.x = "Sp", by.y = "vHelminthNameCorrected", all.x = T)
-
-Hosts <- Hosts %>% dplyr::rename(hDom = hWildDomFAO)
-
-Domestics <- Hosts[Hosts$hDom == "domestic", "Sp"]
-Wildlife <- Hosts[Hosts$hDom == "wild", "Sp"]
-
-DomesticHelminths <- as.factor(AssocsBase[AssocsBase$Host %in% Domestics, "Helminth"])
-WildlifeHelminths <- as.factor(AssocsBase[AssocsBase$Host %in% Wildlife, "Helminth"])
-HumanHelminths <- as.factor(AssocsBase[AssocsBase$Host == "Homo_sapiens", "Helminth"])
-
-ZoonoticHelminths <- intersect(HumanHelminths, WildlifeHelminths)
-
-AssocsTraits <- merge(AssocsTraits, HostTraits, by.x = "Host", by.y = "hHostNameFinal", all.x = T)
-AssocsTraits <- merge(AssocsTraits, HelminthTraits, by.x = "Helminth", by.y = "vHelminthNameCorrected", all.x = T)
-
-AssocsTraits$Domestic <- ifelse(AssocsTraits$Host%in%Domestics,1,0)
-AssocsTraits$Wildlife <- ifelse(AssocsTraits$Host%in%Wildlife,1,0)
-AssocsTraits$Zoonosis <- ifelse(AssocsTraits$Helminth%in%ZoonoticHelminths,1,0)
-
-Hosts <- Hosts %>% 
-  mutate(
-    Domestic = ifelse(Sp %in% Domestics, 1, 0),
-    Wildlife = ifelse(Sp %in% Wildlife, 1, 0),
-    hZoonosisCount = c(table(AssocsTraits[AssocsTraits$Helminth%in%ZoonoticHelminths,"Host"])),
-    Records = c(table(AssocsTraits$Host))
-  ) %>%
-  mutate(hZoonosisProp = hZoonosisCount/Records)
-
-Helminths <- Helminths %>%
-  mutate(
-    Human = case_when(
-      Sp %in% HumanHelminths ~ 1,
-      TRUE ~ 0),
-    
-    Domestic = case_when(
-      Sp %in% DomesticHelminths ~ 1,
-      TRUE ~ 0),
-    
-    Wildlife = case_when(
-      Sp %in% WildlifeHelminths ~ 1,
-      TRUE ~ 0),
-    
-    DomesticCount = c(table(AssocsTraits[AssocsTraits$Domestic == 1,"Helminth"])),
-    WildlifeCount = c(table(AssocsTraits[AssocsTraits$Wildlife == 1,"Helminth"])),
-    ZoonosisCount = c(table(AssocsTraits[AssocsTraits$Zoonosis == 1,"Helminth"])),
-    HumanCount = c(table(AssocsBase[AssocsBase$Host == "Homo_sapiens", "Helminth"]))[as.character(Helminths$Sp)],
-    
-    Records = c(table(AssocsTraits$Helminth))
-  ) %>% mutate(
-    
-    
-    PropDomestic = DomesticCount/Records,
-    PropWildlife = WildlifeCount/Records,
-    PropHuman = HumanCount/Records,
-    
-    PropZoonosis = ZoonosisCount/Records
-    
-  )
-
-
-Helminths$HumDomWild <- factor(with(Helminths, 
-                                    paste(ifelse(Human,"Human",""), 
-                                          ifelse(Domestic,"Domestic",""), 
-                                          ifelse(Wildlife,"Wild",""), sep = "")))
 
 # Loading functions, determining themes ####
 

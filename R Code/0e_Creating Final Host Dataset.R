@@ -1,6 +1,6 @@
 # Creating final dataset
 
-library(tidyverse)
+library(tidyverse); library(vegan)
 
 if(file.exists("Data/FullRangeOverlap.Rdata")) load("Data/FullRangeOverlap.Rdata") else{
   source(paste0(CodeRoot,"/","0c2_Exhaustive Spatial Data Import.R"))
@@ -67,7 +67,7 @@ FinalHostMatrix$Sp2 <- factor(FinalHostMatrix$Sp2, levels = union(FinalHostMatri
 for(x in 1:length(WormGroups)){
   
   df <- reshape2::melt(HostAdjList[[x]]) %>%
-    rename(Sp = Var1, Sp2 = Var2)
+    dplyr::rename(Sp = Var1, Sp2 = Var2)
   
   names(df)[3] <- WormGroups[x]  
   

@@ -22,6 +22,7 @@ for(r in 1:length(SubResps)){
   # Generate species-level trait data
   # Get Sp and Sp2 in "d" on the same factor levels
   
+<<<<<<< HEAD
   #SubDataList[[r]]$Sp <- factor(as.character(SubDataList[[r]]$Sp),
   #                              levels = union(SubDataList[[r]]$Sp, SubDataList[[r]]$Sp2)
   #)
@@ -29,6 +30,15 @@ for(r in 1:length(SubResps)){
   #SubDataList[[r]]$Sp2 <- factor(as.character(SubDataList[[r]]$Sp2),
   #                               levels = union(SubDataList[[r]]$Sp, SubDataList[[r]]$Sp2)
   #)
+=======
+  SubDataList[[r]]$Sp <- factor(as.character(SubDataList[[r]]$Sp),
+                                levels = union(SubDataList[[r]]$Sp, SubDataList[[r]]$Sp2)
+  )
+  
+  SubDataList[[r]]$Sp2 <- factor(as.character(SubDataList[[r]]$Sp2),
+                                 levels = union(SubDataList[[r]]$Sp, SubDataList[[r]]$Sp2)
+  )
+>>>>>>> 62f0327a8e97a1dce811e7e5835317342cba4cf6
   
   SubDataList[[r]]$Sharing <- SubDataList[[r]][,SubResps[r]]
   
