@@ -104,6 +104,26 @@ FinalHostMatrix <- FinalHostMatrix %>% merge(EltonTraits[,c("Scientific","Carniv
 
 FinalHostMatrix$Eaten <- ifelse(FinalHostMatrix$Carnivore==FinalHostMatrix$Carnivore.Sp2,0,1)
 
+Panth1 <- read.delim("data/PanTHERIA_1-0_WR05_Aug2008.txt") %>%
+  dplyr::rename(Sp = MSW05_Binomial, hOrder = MSW05_Order)
+Panth1$Sp <- Panth1$Sp %>% str_replace(" ", "_")
+
+NonEutherians <- c("Diprotodontia",
+                   "Dasyuromorphia",
+                   "Paucituberculata",
+                   "Didelphimorphia",
+                   "Microbiotheria",
+                   "Peramelemorphia", 
+                   "Notoryctemorphia",
+                   "Monotremata")
+
+NonEutherianSp <- Panth1[Panth1$hOrder%in%NonEutherians,"Sp"]
+
+FinalHostMatrix <- FinalHostMatrix %>% filter(!(Sp%in%NonEutherianSp|Sp2%in%NonEutherianSp)) %>%
+  mutate(Phylo = (Phylo - min(Phylo))/max(Phylo - min(Phylo)),
+         Gz = as.numeric(Space==0)) %>% droplevels %>%
+  slice(order(Sp, Sp2))
+
 SlopeTime <- gather(FinalHostMatrix, key = "Group", value = "Shared", paste0(WormGroups,"Binary")) %>%
   filter(!is.na(Shared))
 
