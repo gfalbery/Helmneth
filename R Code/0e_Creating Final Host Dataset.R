@@ -2,6 +2,21 @@
 
 library(tidyverse); library(vegan)
 
+Panth1 <- read.delim("data/PanTHERIA_1-0_WR05_Aug2008.txt") %>%
+  dplyr::rename(Sp = MSW05_Binomial, hOrder = MSW05_Order)
+Panth1$Sp <- Panth1$Sp %>% str_replace(" ", "_")
+
+NonEutherians <- c("Diprotodontia",
+                   "Dasyuromorphia",
+                   "Paucituberculata",
+                   "Didelphimorphia",
+                   "Microbiotheria",
+                   "Peramelemorphia", 
+                   "Notoryctemorphia",
+                   "Monotremata")
+
+NonEutherianSp <- Panth1[Panth1$hOrder%in%NonEutherians,"Sp"]
+
 if(file.exists("Data/FullRangeOverlap.Rdata")) load("Data/FullRangeOverlap.Rdata") else{
   source(paste0(CodeRoot,"/","0_Data Import/0c2_Exhaustive Spatial Data Import.R"))
 }
@@ -14,6 +29,10 @@ if(!file.exists("Data/intermediate/FullSTMatrix.csv")){
   FullSTMatrix <- as.data.frame(cophenetic(STFull)) %>% as.matrix
   
 } else{ FullSTMatrix <- as.matrix(read.csv("data/intermediate/FullSTMatrix.csv", header = T)) }
+
+EutherianSp <- colnames(FullSTMatrix) %>% setdiff(NonEutherianSp)
+
+FullSTMatrix <- FullSTMatrix[EutherianSp, EutherianSp]
 
 rownames(Hosts) = Hosts$Sp
 
@@ -56,9 +75,9 @@ FinalHostMatrix$Sp2 <- factor(FinalHostMatrix$Sp2, levels = union(FinalHostMatri
 
 # Replacing absent names in the full ST matrix ####
 
-#AllMammals <- intersect(colnames(FullSTMatrix),colnames(FullRangeAdj1))
-#AllMammals <- AllMammals[order(AllMammals)]
-#AbsentHosts <- FHN[which(!FHN%in%AllMammals)]
+AllMammals <- intersect(colnames(FullSTMatrix),colnames(FullRangeAdj1))
+AllMammals <- AllMammals[order(AllMammals)]
+AbsentHosts <- FHN[which(!FHN%in%AllMammals)]
 
 # LIST HERE
 
@@ -103,26 +122,6 @@ FinalHostMatrix <- FinalHostMatrix %>% merge(EltonTraits[,c("Scientific","Carniv
                                              suffixes = c("",".Sp2"))
 
 FinalHostMatrix$Eaten <- ifelse(FinalHostMatrix$Carnivore==FinalHostMatrix$Carnivore.Sp2,0,1)
-
-Panth1 <- read.delim("data/PanTHERIA_1-0_WR05_Aug2008.txt") %>%
-  dplyr::rename(Sp = MSW05_Binomial, hOrder = MSW05_Order)
-Panth1$Sp <- Panth1$Sp %>% str_replace(" ", "_")
-
-NonEutherians <- c("Diprotodontia",
-                   "Dasyuromorphia",
-                   "Paucituberculata",
-                   "Didelphimorphia",
-                   "Microbiotheria",
-                   "Peramelemorphia", 
-                   "Notoryctemorphia",
-                   "Monotremata")
-
-NonEutherianSp <- Panth1[Panth1$hOrder%in%NonEutherians,"Sp"]
-
-FinalHostMatrix <- FinalHostMatrix %>% filter(!(Sp%in%NonEutherianSp|Sp2%in%NonEutherianSp)) %>%
-  mutate(Phylo = (Phylo - min(Phylo))/max(Phylo - min(Phylo)),
-         Gz = as.numeric(Space==0)) %>% droplevels %>%
-  slice(order(Sp, Sp2))
 
 SlopeTime <- gather(FinalHostMatrix, key = "Group", value = "Shared", paste0(WormGroups,"Binary")) %>%
   filter(!is.na(Shared))

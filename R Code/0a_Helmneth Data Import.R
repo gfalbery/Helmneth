@@ -42,9 +42,10 @@ diag(HostAdj) <- table(AssocsBase2$Host)
 
 Hosts <- data.frame(Sp = names(V(Hostgraph)),
                     Degree = degree(Hostgraph),
-                    Eigenvector = eigen_centrality(Hostgraph)$vector
+                    Eigenvector = eigen_centrality(Hostgraph)$vector,
                     #Kcore = coreness(Hostgraph),
                     #Between = betweenness(Hostgraph)
+                    Records = c(table(AssocsBase2$Host))
                     )
 
 Helminths <- data.frame(Sp = names(V(Helminthgraph)),
